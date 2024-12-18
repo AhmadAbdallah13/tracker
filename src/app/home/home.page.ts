@@ -1,5 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { AlertController } from '@ionic/angular';
+
 import StatsPlugin from '../statsPlugin/stats';
+import { App } from '@capacitor/app';
 
 
 @Component({
@@ -9,14 +12,49 @@ import StatsPlugin from '../statsPlugin/stats';
 })
 export class HomePage {
 
-  constructor() {}
+  private appStateListener: any;
 
-  async requestAccess() {
-    const result = await StatsPlugin.requestUsageAccess();
+  constructor(
+    private alertController: AlertController,
+  ) {}
+
+  ngOnInit() {
+    this.appStateListener = App.addListener('appStateChange', (state) => {
+      if (state.isActive) {
+        this.checkAccess();
+      }
+    });
+  }
+
+  async checkAccess() {
+    const result = await StatsPlugin.getUsageAccess();
     if (result.granted) {
-      alert('Usage access granted');
+      console.log('Usage access granted');
+      return true
     } else {
-      alert('Redirecting to settings...');
+        return new Promise(async (resolve) => {
+          const confirm = await this.alertController.create({
+            header: 'Permission',
+            message: 'We need usage access, otherwise we can\'t work at all. Give it or get out.',
+            buttons: [
+              {
+                text: 'Give Permission',
+                handler: () => {
+                  StatsPlugin.grantUsageAccess()
+                  return resolve(true);
+                },
+              },
+              {
+                text: 'Get out',
+                role: 'cancel',
+                handler: () => {
+                  App.exitApp();;
+                },
+              },
+            ],
+          });
+          await confirm.present();
+        });
     }
   }
 

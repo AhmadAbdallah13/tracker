@@ -47,7 +47,7 @@ public class AppUsageStats extends Plugin {
   }
 
   @PluginMethod
-  public void requestUsageAccess(PluginCall call) {
+  public void getUsageAccess(PluginCall call) {
     Context context = getContext();
     AppOpsManager appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
     int mode = appOpsManager.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.getPackageName());
@@ -55,9 +55,13 @@ public class AppUsageStats extends Plugin {
     if (mode == AppOpsManager.MODE_ALLOWED) {
       call.resolve(new JSObject().put("granted", true));
     } else {
-      Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-      getActivity().startActivity(intent);
       call.resolve(new JSObject().put("granted", false));
     }
+  }
+
+  @PluginMethod
+  public void grantUsageAccess(PluginCall call) {
+    Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+    getActivity().startActivity(intent);
   }
 }
