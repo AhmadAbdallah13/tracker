@@ -4,6 +4,9 @@ import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.provider.Settings;
 import android.app.AppOpsManager;
 
@@ -21,25 +24,38 @@ import java.util.List;
 public class AppUsageStats extends Plugin {
 
   @PluginMethod
-  public void getUsageStats(PluginCall call) {
-    Context context = getContext();
+  public void getInstalledAppsUsageStats(PluginCall call) {
+      Context context = getContext();
+      UsageStatsManager usageStatsManager = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
 
-    UsageStatsManager usageStatsManager = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+      Calendar calendar = Calendar.getInstance();
+      long endTime = calendar.getTimeInMillis();
+      calendar.set(Calendar.HOUR_OF_DAY, 0);
+      calendar.set(Calendar.MINUTE, 0);
+      calendar.set(Calendar.SECOND, 0);
+      long startTime = calendar.getTimeInMillis();
 
-    Calendar calendar = Calendar.getInstance();
-    long endTime = calendar.getTimeInMillis();
-    calendar.add(Calendar.DAY_OF_MONTH, -1);
-    long startTime = calendar.getTimeInMillis();
+      List<UsageStats> usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime);
 
-    List<UsageStats> usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime);
+      JSArray statsArray = new JSArray();
+      PackageManager packageManager = context.getPackageManager();
 
-    JSArray statsArray = new JSArray();
-    for (UsageStats stats : usageStatsList) {
-      JSObject statsObject = new JSObject();
-      statsObject.put("packageName", stats.getPackageName());
-      statsObject.put("totalTimeForeground", stats.getTotalTimeInForeground());
-      statsArray.put(statsObject);
-    }
+      for (UsageStats stats : usageStatsList) {
+          try {
+              ApplicationInfo appInfo = packageManager.getApplicationInfo(stats.getPackageName(), 0);
+              String appName = packageManager.getApplicationLabel(appInfo).toString();
+
+              if (stats.getTotalTimeInForeground() > 0) {
+                  JSObject statsObject = new JSObject();
+                  statsObject.put("packageName", stats.getPackageName());
+                  statsObject.put("appName", appName);
+                  statsObject.put("totalTimeForeground", stats.getTotalTimeInForeground());
+                  statsArray.put(statsObject);
+              }
+          } catch (PackageManager.NameNotFoundException e) {
+              // Skip apps that can't be resolved
+          }
+      }
 
     JSObject result = new JSObject();
     result.put("stats", statsArray);

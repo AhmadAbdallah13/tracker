@@ -10,7 +10,10 @@ import { App } from '@capacitor/app';
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
 })
-export class HomePage {
+export class HomePage implements OnInit {
+
+  apps: any[] = []; // List of apps with usage stats
+  trackedApps: Set<string> = new Set(); // Tracked apps for blocking
 
   private appStateListener: any;
 
@@ -19,11 +22,16 @@ export class HomePage {
   ) {}
 
   ngOnInit() {
+    this.checkAccess();
+    this.loadAppUsageStats();
+
     this.appStateListener = App.addListener('appStateChange', (state) => {
       if (state.isActive) {
         this.checkAccess();
+        this.loadAppUsageStats();
       }
     });
+
   }
 
   async checkAccess() {
@@ -56,6 +64,30 @@ export class HomePage {
           await confirm.present();
         });
     }
+  }
+
+  async loadAppUsageStats() {
+    const result = await StatsPlugin.getInstalledAppsUsageStats();
+    this.apps = result.stats.map((app: any) => ({
+      ...app,
+      totalTimeFormatted: this.formatTime(app.totalTimeForeground),
+      isTracked: this.trackedApps.has(app.packageName),
+    }));
+  }
+
+  toggleAppTracking(app: any) {
+    if (this.trackedApps.has(app.packageName)) {
+      this.trackedApps.delete(app.packageName);
+    } else {
+      this.trackedApps.add(app.packageName);
+    }
+    app.isTracked = !app.isTracked;
+  }
+
+  formatTime(milliseconds: number): string {
+    const minutes = Math.floor(milliseconds / 60000);
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
   }
 
 }

@@ -12,4 +12,16 @@
       <ion-title size="large">Tracker</ion-title>
     </ion-toolbar>
   </ion-header>
+  <ion-list *ngIf="apps.length > 0">
+    <ion-item-sliding *ngFor="let app of apps; index as i">
+      <ion-item>
+        <ion-label>
+          <h2>{{ app.appName }}</h2>
+          <p>Usage Today: {{ app.totalTimeFormatted }}</p>
+        </ion-label>
+        <ion-toggle [(ngModel)]="app.isTracked" (ionChange)="toggleAppTracking(app)">
+        </ion-toggle>
+      </ion-item>
+    </ion-item-sliding>
+  </ion-list>
 </ion-content>
