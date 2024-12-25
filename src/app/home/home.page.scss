@@ -44,3 +44,19 @@ ion-toggle {
   --handle-background: #3880ff;
   --background: #d6d6d6;
 }
+
+
+ion-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+ion-item {
+  align-items: center;
+}
+
+ion-label p {
+  color: gray;
+  font-size: 0.9em;
+}

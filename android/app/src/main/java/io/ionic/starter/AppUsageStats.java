@@ -126,15 +126,10 @@ public class AppUsageStats extends Plugin {
     Context context = getContext();
     PackageManager packageManager = context.getPackageManager();
 
-    System.out.println("shit in java before calling the package manager");
-
     // Get a list of all installed apps
     List<ApplicationInfo> installedApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
 
     JSArray appsArray = new JSArray();
-
-    System.out.println("shit in java before for");
-    System.out.println(installedApps);
 
     for (ApplicationInfo appInfo : installedApps) {
       // Check if the app is launchable by the user
@@ -166,9 +161,6 @@ public class AppUsageStats extends Plugin {
 
       appsArray.put(appObject);
     }
-
-    System.out.println("shit in java after for");
-    System.out.println(appsArray);
 
     JSObject result = new JSObject();
     result.put("apps", appsArray);
