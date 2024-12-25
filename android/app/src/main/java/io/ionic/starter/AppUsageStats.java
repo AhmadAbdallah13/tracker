@@ -7,8 +7,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.provider.Settings;
 import android.app.AppOpsManager;
+import android.util.Base64;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -17,6 +22,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -113,5 +119,75 @@ public class AppUsageStats extends Plugin {
   public void grantUsageAccess(PluginCall call) {
     Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
     getActivity().startActivity(intent);
+  }
+
+  @PluginMethod
+  public void getInstalledApps(PluginCall call) {
+    Context context = getContext();
+    PackageManager packageManager = context.getPackageManager();
+
+    System.out.println("shit in java before calling the package manager");
+
+    // Get a list of all installed apps
+    List<ApplicationInfo> installedApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
+
+    JSArray appsArray = new JSArray();
+
+    System.out.println("shit in java before for");
+    System.out.println(installedApps);
+
+    for (ApplicationInfo appInfo : installedApps) {
+      // Check if the app is launchable by the user
+      Intent launchIntent = packageManager.getLaunchIntentForPackage(appInfo.packageName);
+      if (launchIntent == null) {
+        continue; // Skip apps that can't be launched
+      }
+
+      // Create a JSON object for each app
+      JSObject appObject = new JSObject();
+      appObject.put("packageName", appInfo.packageName);
+      appObject.put("appName", packageManager.getApplicationLabel(appInfo).toString());
+
+      try {
+        Drawable icon = packageManager.getApplicationIcon(appInfo);
+
+        // Convert Drawable to Bitmap
+        Bitmap bitmap = getBitmapFromDrawable(icon);
+
+        // Convert Bitmap to Base64
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+        String iconBase64 = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
+
+        appObject.put("icon", "data:image/png;base64," + iconBase64);
+      } catch (Exception e) {
+        appObject.put("icon", ""); // Fallback if icon fetching fails
+      }
+
+      appsArray.put(appObject);
+    }
+
+    System.out.println("shit in java after for");
+    System.out.println(appsArray);
+
+    JSObject result = new JSObject();
+    result.put("apps", appsArray);
+    call.resolve(result);
+  }
+
+  // Helper method to convert any Drawable to Bitmap
+  private Bitmap getBitmapFromDrawable(Drawable drawable) {
+    if (drawable instanceof BitmapDrawable) {
+      return ((BitmapDrawable) drawable).getBitmap();
+    }
+
+    // For non-bitmap drawables (e.g., vector), render onto a Canvas
+    int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 100;
+    int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 100;
+    Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    Canvas canvas = new Canvas(bitmap);
+    drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+    drawable.draw(canvas);
+    return bitmap;
   }
 }

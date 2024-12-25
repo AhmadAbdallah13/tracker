@@ -1,27 +1,36 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>
-      Tracker
-    </ion-title>
+    <ion-title>App Usage Tracker</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tracker</ion-title>
-    </ion-toolbar>
-  </ion-header>
-  <ion-list *ngIf="apps.length > 0">
-    <ion-item-sliding *ngFor="let app of apps; index as i">
-      <ion-item>
-        <ion-label>
-          <h2>{{ app.appName }}</h2>
-          <p>Usage Today: {{ app.totalTimeFormatted }}</p>
-        </ion-label>
-        <ion-toggle [(ngModel)]="app.isTracked" (ionChange)="toggleAppTracking(app)">
-        </ion-toggle>
-      </ion-item>
-    </ion-item-sliding>
-  </ion-list>
+<ion-content>
+  <ion-grid>
+    <ion-row *ngIf="apps.length > 0">
+      <ion-col size="12" *ngFor="let app of apps">
+        <ion-card>
+          <ion-item>
+            <ion-avatar slot="start">
+              <img [src]="app.icon || 'assets/default-icon.png'" alt="{{ app.appName }}" />
+            </ion-avatar>
+            <ion-label>
+              <h2>{{ app.appName }}</h2>
+            </ion-label>
+            <ion-toggle
+              class="ion-margin-end"
+              slot="end"
+              [(ngModel)]="app.isTracked"
+              (ionChange)="toggleAppTracking(app)"
+            ></ion-toggle>
+          </ion-item>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row *ngIf="apps.length === 0">
+      <ion-col size="12" class="ion-text-center">
+        <p>No apps found. Please grant the necessary permissions.</p>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>

@@ -23,12 +23,12 @@ export class HomePage implements OnInit {
 
   ngOnInit() {
     this.checkAccess();
-    this.loadAppUsageStats();
+    this.loadInstalledApps();
 
     this.appStateListener = App.addListener('appStateChange', (state) => {
       if (state.isActive) {
         this.checkAccess();
-        this.loadAppUsageStats();
+        this.loadInstalledApps();
       }
     });
 
@@ -64,6 +64,17 @@ export class HomePage implements OnInit {
           await confirm.present();
         });
     }
+  }
+
+  async loadInstalledApps(){
+    const result = await StatsPlugin.getInstalledApps();
+    console.log("shit")
+    console.log(result.apps)
+    this.apps = result.apps.map((app: any) => ({
+      ...app,
+      // totalTimeFormatted: this.formatTime(app.totalTimeForeground),
+      isTracked: this.trackedApps.has(app.packageName),
+    }));
   }
 
   async loadAppUsageStats() {
