@@ -3,7 +3,7 @@ import { AlertController } from '@ionic/angular';
 
 import StatsPlugin from '../statsPlugin/stats';
 import { App } from '@capacitor/app';
-
+import { StorageService } from '../services/storage-service.service';
 
 @Component({
   selector: 'app-home',
@@ -19,6 +19,7 @@ export class HomePage implements OnInit {
 
   constructor(
     private alertController: AlertController,
+    private storageService: StorageService,
   ) {}
 
   ngOnInit() {
@@ -38,7 +39,7 @@ export class HomePage implements OnInit {
     const result = await StatsPlugin.getUsageAccess();
     if (result.granted) {
       console.log('Usage access granted');
-      return true
+      return true;
     } else {
         return new Promise(async (resolve) => {
           const confirm = await this.alertController.create({
@@ -48,7 +49,7 @@ export class HomePage implements OnInit {
               {
                 text: 'Give Permission',
                 handler: () => {
-                  StatsPlugin.grantUsageAccess()
+                  StatsPlugin.grantUsageAccess();
                   return resolve(true);
                 },
               },
@@ -56,7 +57,7 @@ export class HomePage implements OnInit {
                 text: 'Get out',
                 role: 'cancel',
                 handler: () => {
-                  App.exitApp();;
+                  App.exitApp();
                 },
               },
             ],
@@ -66,7 +67,9 @@ export class HomePage implements OnInit {
     }
   }
 
-  async loadInstalledApps(){
+  async loadInstalledApps() {
+    this.loadTrackedApps()
+
     const result = await StatsPlugin.getInstalledApps();
     this.apps = result.apps.map((app: any) => ({
       ...app,
@@ -74,13 +77,41 @@ export class HomePage implements OnInit {
     }));
   }
 
-  toggleAppTracking(app: any) {
+  async toggleAppTracking(app: any) {
     if (this.trackedApps.has(app.packageName)) {
       this.trackedApps.delete(app.packageName);
     } else {
       this.trackedApps.add(app.packageName);
     }
     app.isTracked = !app.isTracked;
+
+    // Persist the updated tracked apps
+    await this.saveTrackedApps();
+  }
+
+  async saveTrackedApps() {
+    console.log("shit tracked")
+    console.log(this.trackedApps)
+
+    const trackedAppsArray = Array.from(this.trackedApps);
+    await this.storageService.set(
+      'trackedApps',
+      JSON.stringify(trackedAppsArray),
+    );
+
+    console.log("shit after")
+    console.log(await this.storageService.get('trackedApps'))
+  }
+
+  async loadTrackedApps() {
+    // console.log("shit")
+    const value = await this.storageService.get('trackedApps');
+    // console.log("shit after")
+    // console.log(value)
+
+    if (value) {
+      this.trackedApps = new Set(JSON.parse(value));
+    }
   }
 
   formatTime(milliseconds: number): string {
