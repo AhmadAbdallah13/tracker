@@ -3,7 +3,8 @@ import { AlertController } from '@ionic/angular';
 
 import StatsPlugin from '../statsPlugin/stats';
 import { App } from '@capacitor/app';
-import { StorageService } from '../services/storage-service.service';
+import { Storage } from '@ionic/storage-angular';
+
 
 @Component({
   selector: 'app-home',
@@ -19,10 +20,12 @@ export class HomePage implements OnInit {
 
   constructor(
     private alertController: AlertController,
-    private storageService: StorageService,
+    private storage: Storage,
   ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
+    await this.storage.create();
+
     this.checkAccess();
     this.loadInstalledApps();
 
@@ -32,7 +35,6 @@ export class HomePage implements OnInit {
         this.loadInstalledApps();
       }
     });
-
   }
 
   async checkAccess() {
@@ -68,7 +70,7 @@ export class HomePage implements OnInit {
   }
 
   async loadInstalledApps() {
-    this.loadTrackedApps()
+    await this.loadTrackedApps()
 
     const result = await StatsPlugin.getInstalledApps();
     this.apps = result.apps.map((app: any) => ({
@@ -90,28 +92,25 @@ export class HomePage implements OnInit {
   }
 
   async saveTrackedApps() {
-    console.log("shit tracked")
-    console.log(this.trackedApps)
-
     const trackedAppsArray = Array.from(this.trackedApps);
-    await this.storageService.set(
+    await this.storage.remove(
+      'trackedApps',
+    );
+
+    await this.storage.set(
       'trackedApps',
       JSON.stringify(trackedAppsArray),
     );
-
-    console.log("shit after")
-    console.log(await this.storageService.get('trackedApps'))
   }
 
   async loadTrackedApps() {
-    // console.log("shit")
-    const value = await this.storageService.get('trackedApps');
-    // console.log("shit after")
-    // console.log(value)
-
-    if (value) {
-      this.trackedApps = new Set(JSON.parse(value));
-    }
+    await this.storage.get(
+      'trackedApps'
+    ).then((trackedApps) => {
+      this.trackedApps = new Set(JSON.parse(trackedApps))
+    }).catch((reason) => {
+      alert("can't get tracked apps in load tracked apps function")
+    })
   }
 
   formatTime(milliseconds: number): string {

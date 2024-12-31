@@ -4,10 +4,13 @@ import { Storage } from '@ionic/storage-angular';
 @Injectable({ providedIn: 'root' })
 export class StorageService {
 
-  private _storage: Storage | null = null;
-  private storage = new Storage()
+  /**
+   * not used for now
+  */
 
-  constructor() {
+  private _storage: Storage | null = null;
+
+  constructor(private storage: Storage) {
     this.init();
   }
 
@@ -17,10 +20,18 @@ export class StorageService {
   }
 
   public set(key: string, value: any) {
-    this._storage?.set(key, value);
+    this._storage!.set(key, value);
   }
 
   public get(key: string) {
     return this._storage?.get(key);
+  }
+
+  public delete(key: string) {
+    this._storage?.remove(key);
+  }
+
+  public keys() {
+    this._storage?.keys();
   }
 }

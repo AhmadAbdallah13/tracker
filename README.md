@@ -9,6 +9,8 @@ cd android && ./gradlew clean && ./gradlew build && cd .. && npx cap sync androi
 # Live reload on the emultor
 ionic build && ionic capacitor run android -l --external
 
-
 # run:
 npx cap run android
+
+# Resources
+https://github.com/ionic-team/ionic-storage
