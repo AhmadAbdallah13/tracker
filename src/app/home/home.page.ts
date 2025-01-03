@@ -4,6 +4,7 @@ import { AlertController } from '@ionic/angular';
 import StatsPlugin from '../statsPlugin/stats';
 import { App } from '@capacitor/app';
 import { Storage } from '@ionic/storage-angular';
+import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
 
 
 @Component({
@@ -21,12 +22,20 @@ export class HomePage implements OnInit {
   constructor(
     private alertController: AlertController,
     private storage: Storage,
+    private backgroundMode: BackgroundMode,
   ) {}
 
   async ngOnInit() {
+    this.checkAccess();
+
+    this.backgroundMode.enable();
+    this.backgroundMode.on('activate').subscribe(() => {
+      console.error('App is running in the background');
+      this.startTracking();
+    });
+
     await this.storage.create();
 
-    this.checkAccess();
     this.loadInstalledApps();
 
     this.appStateListener = App.addListener('appStateChange', (state) => {
@@ -37,13 +46,25 @@ export class HomePage implements OnInit {
     });
   }
 
+  startTracking() {
+    setInterval(() => {
+      this.trackForegroundApp();
+    }, 10000); // Track every 10 seconds
+  }
+
+  async trackForegroundApp() {
+    console.error('shit over and over');
+    // const result = await StatsPlugin.periodicCalls();
+    // console.log(result); // Handle the app usage data
+  }
+
   async checkAccess() {
     const result = await StatsPlugin.getUsageAccess();
     if (result.granted) {
       console.log('Usage access granted');
       return true;
     } else {
-        return new Promise(async (resolve) => {
+        return await new Promise(async (resolve) => {
           const confirm = await this.alertController.create({
             header: 'Permission',
             message: 'We need usage access, otherwise we can\'t work at all. Give it or get out.',

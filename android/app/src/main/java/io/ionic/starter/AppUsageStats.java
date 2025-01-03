@@ -31,6 +31,14 @@ import java.util.TimeZone;
 
 @CapacitorPlugin(name = "AppUsageStats")
 public class AppUsageStats extends Plugin {
+  @PluginMethod
+  public void periodicCalls(PluginCall call) {
+    System.out.println("shit is called from java");
+
+    JSObject result = new JSObject();
+    result.put("stats", "13");
+    call.resolve(result);
+  }
 
   @PluginMethod
   public void getInstalledAppsUsageStats(PluginCall call) {
