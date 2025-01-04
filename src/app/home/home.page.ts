@@ -47,15 +47,17 @@ export class HomePage implements OnInit {
   }
 
   startTracking() {
-    setInterval(() => {
-      this.trackForegroundApp();
-    }, 10000); // Track every 10 seconds
-  }
+    setInterval(async () => {
+      try {
+        const result = await StatsPlugin.periodicCalls();
 
-  async trackForegroundApp() {
-    console.error('shit over and over');
-    // const result = await StatsPlugin.periodicCalls();
-    // console.log(result); // Handle the app usage data
+        console.log("shit");
+        console.log("Current app name in foreground:", result.currentApp);
+        console.log("Current app time in foreground:", result.duration);
+      } catch (error) {
+        console.error("Error fetching current app:", error);
+      }
+    }, 5000);
   }
 
   async checkAccess() {

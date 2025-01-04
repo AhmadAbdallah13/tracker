@@ -33,10 +33,44 @@ import java.util.TimeZone;
 public class AppUsageStats extends Plugin {
   @PluginMethod
   public void periodicCalls(PluginCall call) {
-    System.out.println("shit is called from java");
+    Context context = getContext();
+    UsageStatsManager usageStatsManager = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+
+    long currentTime = System.currentTimeMillis();
+    long startTime = currentTime - 1000 * 60 * 10; // Check for the last 10 minutes
+
+    UsageEvents usageEvents = usageStatsManager.queryEvents(startTime, currentTime);
+
+    String currentApp = null;
+    long appStartTime = 0;
+    long appDuration = 0;
+
+    UsageEvents.Event event = new UsageEvents.Event();
+    while (usageEvents.hasNextEvent()) {
+      usageEvents.getNextEvent(event);
+      String packageName = event.getPackageName();
+
+      if (event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+        // Start tracking the new app
+        currentApp = packageName;
+        appStartTime = event.getTimeStamp();
+      } else if (event.getEventType() == UsageEvents.Event.MOVE_TO_BACKGROUND) {
+        // Calculate time spent in foreground for the current app
+        if (currentApp != null && currentApp.equals(packageName)) {
+          appDuration = event.getTimeStamp() - appStartTime;
+          if (appDuration > 10 * 60 * 1000) { // More than 10 minutes
+            System.out.println("App exceeded 10 minutes in a single session: " + currentApp);
+          }
+          // Reset tracking
+          currentApp = null;
+          appStartTime = 0;
+        }
+      }
+    }
 
     JSObject result = new JSObject();
-    result.put("stats", "13");
+    result.put("currentApp", currentApp);
+    result.put("duration", appDuration);
     call.resolve(result);
   }
 
@@ -112,6 +146,11 @@ public class AppUsageStats extends Plugin {
 
   @PluginMethod
   public void getUsageAccess(PluginCall call) {
+//    todo: add this permission check to the list of checks and prompts.
+//    Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+//    getActivity().startActivity(intent);
+
+
     Context context = getContext();
     AppOpsManager appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
     int mode = appOpsManager.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.getPackageName());
