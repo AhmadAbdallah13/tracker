@@ -68,6 +68,13 @@ public class AppUsageStats extends Plugin {
       }
     }
 
+    if (currentApp != null && appStartTime > 0) {
+      appDuration = currentTime - appStartTime;
+      if (appDuration > 10 * 60 * 1000) { // More than 10 minutes
+        System.out.println("App exceeded 10 minutes in a single session: " + currentApp);
+      }
+    }
+
     JSObject result = new JSObject();
     result.put("currentApp", currentApp);
     result.put("duration", appDuration);

@@ -51,9 +51,14 @@ export class HomePage implements OnInit {
       try {
         const result = await StatsPlugin.periodicCalls();
 
-        console.log("shit");
-        console.log("Current app name in foreground:", result.currentApp);
-        console.log("Current app time in foreground:", result.duration);
+        let app = result.currentApp
+        let duration = result.duration
+
+        if (this.trackedApps.has(app)){
+          if (duration > 30000 ) {
+            console.log("BLOCK ALL APPS NOW")
+          }
+        }
       } catch (error) {
         console.error("Error fetching current app:", error);
       }
