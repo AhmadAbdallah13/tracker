@@ -1,5 +1,7 @@
 package io.ionic.starter;
 
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
@@ -11,6 +13,8 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.app.AppOpsManager;
 import android.util.Base64;
@@ -29,8 +33,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import androidx.core.app.NotificationCompat;
+
 @CapacitorPlugin(name = "AppUsageStats")
 public class AppUsageStats extends Plugin {
+  @PluginMethod
+  public void getCurrentApp(PluginCall call) {
+    Context context = getContext();
+    UsageStatsManager usageStatsManager = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+
+    long currentTime = System.currentTimeMillis();
+    long startTime = currentTime - 1000 * 60 * 10; // Check for the last 10 minutes
+    UsageEvents usageEvents = usageStatsManager.queryEvents(startTime, currentTime);
+
+    String currentApp = null;
+
+    UsageEvents.Event event = new UsageEvents.Event();
+    while (usageEvents.hasNextEvent()) {
+      usageEvents.getNextEvent(event);
+      String packageName = event.getPackageName();
+
+      if (event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+        currentApp = packageName;
+      }
+    }
+    JSObject result = new JSObject();
+    result.put("currentApp", currentApp);
+    call.resolve(result);
+  }
+
   @PluginMethod
   public void periodicCalls(PluginCall call) {
     Context context = getContext();
@@ -153,12 +184,20 @@ public class AppUsageStats extends Plugin {
 
   @PluginMethod
   public void getUsageAccess(PluginCall call) {
+    Context context = getContext();
+
+
 //    todo: add this permission check to the list of checks and prompts.
 //    Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
 //    getActivity().startActivity(intent);
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      if (!Settings.canDrawOverlays(context)){
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+        getActivity().startActivity(intent);
+      }
+    }
 
-    Context context = getContext();
     AppOpsManager appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
     int mode = appOpsManager.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.getPackageName());
 
@@ -236,4 +275,45 @@ public class AppUsageStats extends Plugin {
     drawable.draw(canvas);
     return bitmap;
   }
+
+  @PluginMethod
+  public void showOverlay(PluginCall call) {
+    Context context = getContext();
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+      if (!Settings.canDrawOverlays(context)) {
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+          Uri.parse("package:" + context.getPackageName()));
+        context.startActivity(intent);
+        call.reject("Overlay permission not granted");
+        return;
+      }
+    }
+
+    Intent serviceIntent = new Intent(context, OverlayService.class);
+    context.startService(serviceIntent);
+
+    showNotification("apps usage has been blocked for the next hour");
+
+    call.resolve();
+  }
+
+  @PluginMethod
+  public void liftBlockNotification(PluginCall call) {
+    showNotification("apps usage blocking has been lifted, enjoy!");
+    call.resolve();
+  }
+
+  private void showNotification(String content) {
+    Context context = getContext();
+    Notification notification = new NotificationCompat.Builder(context, "dummy_channel")
+      .setContentTitle("Apps usage")
+      .setContentText(content)
+//      .setSmallIcon(R.drawable.your_icon)
+      .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .build();
+
+    NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+    manager.notify(2, notification); // Use a unique ID for cooldown notifications
+  }
+
 }

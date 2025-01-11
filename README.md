@@ -14,3 +14,5 @@ npx cap run android
 
 # Resources
 https://github.com/ionic-team/ionic-storage
+https://danielsogl.gitbook.io/awesome-cordova-plugins/android-permissions
+https://developer.android.com/reference/android/Manifest.permission#SYSTEM_ALERT_WINDOW
