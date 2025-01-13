@@ -1,6 +1,7 @@
 package io.ionic.starter;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.usage.UsageEvents;
 import android.app.usage.UsageStats;
@@ -109,6 +110,8 @@ public class AppUsageStats extends Plugin {
     JSObject result = new JSObject();
     result.put("currentApp", currentApp);
     result.put("duration", appDuration);
+    System.out.print("shit from java");
+    System.out.print(result);
     call.resolve(result);
   }
 
@@ -191,11 +194,9 @@ public class AppUsageStats extends Plugin {
 //    Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
 //    getActivity().startActivity(intent);
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (!Settings.canDrawOverlays(context)){
-        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-        getActivity().startActivity(intent);
-      }
+    if (!Settings.canDrawOverlays(context)) {
+      Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+      getActivity().startActivity(intent);
     }
 
     AppOpsManager appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
@@ -279,14 +280,12 @@ public class AppUsageStats extends Plugin {
   @PluginMethod
   public void showOverlay(PluginCall call) {
     Context context = getContext();
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-      if (!Settings.canDrawOverlays(context)) {
-        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-          Uri.parse("package:" + context.getPackageName()));
-        context.startActivity(intent);
-        call.reject("Overlay permission not granted");
-        return;
-      }
+    if (!Settings.canDrawOverlays(context)) {
+      Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+        Uri.parse("package:" + context.getPackageName()));
+      context.startActivity(intent);
+      call.reject("Overlay permission not granted");
+      return;
     }
 
     Intent serviceIntent = new Intent(context, OverlayService.class);
@@ -304,16 +303,28 @@ public class AppUsageStats extends Plugin {
   }
 
   private void showNotification(String content) {
-    Context context = getContext();
-    Notification notification = new NotificationCompat.Builder(context, "dummy_channel")
-      .setContentTitle("Apps usage")
-      .setContentText(content)
-//      .setSmallIcon(R.drawable.your_icon)
-      .setPriority(NotificationCompat.PRIORITY_HIGH)
-      .build();
-
-    NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-    manager.notify(2, notification); // Use a unique ID for cooldown notifications
+//    Context context = getContext();
+//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//      CharSequence name = "Tracker";
+//      String description = "Apps usages info";
+//      int importance = NotificationManager.IMPORTANCE_DEFAULT;
+//      NotificationChannel channel = new NotificationChannel("StatsChannel", name, importance);
+//      channel.setDescription(description);
+//      // Register the channel with the system. You can't change the importance
+//      // or other notification behaviors after this.
+//      NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
+//      notificationManager.createNotificationChannel(channel);
+//    }
+//
+//    Notification notification = new NotificationCompat.Builder(context, "StatsChannel")
+//      .setContentTitle("Apps usage")
+//      .setContentText(content)
+//      .setSmallIcon(R.mipmap.ic_launcher)
+//      .setPriority(NotificationCompat.PRIORITY_HIGH)
+//      .build();
+//
+//    NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+//    manager.notify(2, notification); // Use a unique ID for cooldown notifications
   }
 
 }

@@ -1,6 +1,7 @@
 package io.ionic.starter;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
@@ -82,10 +83,20 @@ public class OverlayService extends Service {
 //  }
 
   private void showNotification(String title, String content) {
+    CharSequence name = "Tracker";
+    String description = "Apps usages info";
+    int importance = NotificationManager.IMPORTANCE_DEFAULT;
+    NotificationChannel channel = new NotificationChannel("OverlayServiceChannel", name, importance);
+    channel.setDescription(description);
+    // Register the channel with the system. You can't change the importance
+    // or other notification behaviors after this.
+    NotificationManager notificationManager = getSystemService(NotificationManager.class);
+    notificationManager.createNotificationChannel(channel);
+
     Notification notification = new NotificationCompat.Builder(this, "OverlayServiceChannel")
       .setContentTitle(title)
       .setContentText(content)
-//      .setSmallIcon(R.drawable.ic_notification)
+      .setSmallIcon(R.mipmap.ic_launcher)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .build();
 

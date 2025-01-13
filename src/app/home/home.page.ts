@@ -32,6 +32,7 @@ export class HomePage implements OnInit {
     this.checkAccess();
 
     this.backgroundMode.enable();
+    this.backgroundMode.disableBatteryOptimizations()
     this.backgroundMode.on('activate').subscribe(() => {
       console.error('App is running in the background');
       this.startTracking();
@@ -52,13 +53,18 @@ export class HomePage implements OnInit {
   startTracking() {
     setInterval(async () => {
       try {
-
+        console.error("shit called")
+        console.error(this.isBlocked)
         if(this.isBlocked){
           /**
            * if we are already in a block apps state, just block the apps without checking the stats.
            */
           const result = await StatsPlugin.periodicCalls();
           let app = result.currentApp
+
+          console.error("shit after blocking the apps")
+          console.error(app)
+          console.error(this.trackedApps.has(app))
 
           if (this.trackedApps.has(app)){
             await StatsPlugin.showOverlay();
