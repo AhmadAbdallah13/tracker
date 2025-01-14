@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#80000000"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/overlay_message"
+        android:layout_width="251dp"
+        android:layout_height="173dp"
+        android:gravity="center"
+        android:padding="20dp"
+        android:text="App Blocked"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        tools:ignore="HardcodedText" />
+
+    <TextView
+        android:id="@+id/close_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/overlay_message"
+        android:layout_alignEnd="@+id/overlay_message"
+        android:layout_marginTop="94dp"
+        android:layout_marginEnd="58dp"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="Get Me out"
+        android:textColor="#FF0000"
+        android:textSize="25sp"
+        tools:ignore="HardcodedText" />
+</RelativeLayout>
