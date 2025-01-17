@@ -4,13 +4,18 @@ import android.content.Context
 import android.content.SharedPreferences
 
 class PreferencesHelper(context: Context) {
-    private val sharedPreferences: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+  /**
+   * helper class to save data in local storage
+   */
 
-    fun saveToggledApps(toggledApps: Set<String>) {
-        sharedPreferences.edit().putStringSet("ToggledApps", toggledApps).apply()
-    }
+  private val sharedPreferences: SharedPreferences =
+    context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
 
-    fun getToggledApps(): Set<String> {
-        return sharedPreferences.getStringSet("ToggledApps", emptySet()) ?: emptySet()
-    }
+  fun saveToggledApps(toggledApps: Set<String>) {
+    sharedPreferences.edit().putStringSet("ToggledApps", toggledApps).apply()
+  }
+
+  fun getToggledApps(): Set<String> {
+    return sharedPreferences.getStringSet("ToggledApps", emptySet()) ?: emptySet()
+  }
 }
