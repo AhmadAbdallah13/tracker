@@ -49,7 +49,7 @@ class UsageMonitorService : Service() {
     return NotificationCompat.Builder(this, notificationChannelId)
       .setContentTitle("Tracker")
       .setContentText("Tracking app usage in the background.")
-      .setSmallIcon(R.drawable.ic_launcher_foreground)
+      .setSmallIcon(R.mipmap.ic_launcher)
       .build()
   }
 
@@ -173,7 +173,7 @@ class UsageMonitorService : Service() {
 
     // Build the notification
     val notification = NotificationCompat.Builder(this, channelId)
-      .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with your app's icon
+      .setSmallIcon(R.mipmap.ic_launcher)
       .setContentTitle("Tracker")
       .setContentText("You can now use the blocked apps again, enjoy amigo.")
       .setPriority(NotificationCompat.PRIORITY_HIGH)
