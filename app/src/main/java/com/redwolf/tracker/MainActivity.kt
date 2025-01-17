@@ -1,8 +1,8 @@
 package com.redwolf.tracker
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.ActivityManager.RunningAppProcessInfo
 import android.app.AlarmManager
 import android.app.AppOpsManager
 import android.app.PendingIntent
@@ -13,8 +13,8 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
+import android.os.Process
 import android.provider.Settings
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -37,9 +37,7 @@ class MainActivity : Activity() {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    System.out.println("shit called here")
-
-    if (!haveUsageAccess(this)) {
+    if (!hasUsageAccess(this)) {
       val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       startActivity(intent)
@@ -115,24 +113,6 @@ class MainActivity : Activity() {
   }
 }
 
-private fun haveUsageAccess(activity: MainActivity): Boolean {
-//  fixme: make the permission check work.
-  return true
-//  try {
-//    val packageManager: PackageManager = activity.packageManager
-//    val applicationInfo = packageManager.getApplicationInfo(activity.packageName, 0)
-//    val mode = activity.getSystemService(Context.APP_OPS_SERVICE)
-//      .checkOpNoThrow(
-//        AppOpsManager.OPSTR_GET_USAGE_STATS,
-//        applicationInfo.uid,
-//        applicationInfo.packageName
-//      )
-//    return mode == AppOpsManager.MODE_ALLOWED
-//  } catch (e: PackageManager.NameNotFoundException) {
-//    return false
-//  }
-}
-
 data class AppInfo(
   val name: String,
   val packageName: String,
@@ -170,4 +150,15 @@ class AppsAdapter(
 
     return view
   }
+}
+
+fun hasUsageAccess(context: Context): Boolean {
+  val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+  val mode =
+    appOps.unsafeCheckOpRaw(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+  val granted = if (mode == AppOpsManager.MODE_DEFAULT)
+    (context.checkCallingOrSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED)
+  else
+    (mode == AppOpsManager.MODE_ALLOWED)
+  return granted
 }
