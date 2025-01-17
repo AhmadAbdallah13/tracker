@@ -20,11 +20,10 @@ class UsageMonitorService : Service() {
 
   private lateinit var handler: Handler
   private lateinit var preferencesHelper: PreferencesHelper
-  private val trackedAppUsage = mutableMapOf<String, Long>()
-  private val usageCheckInterval: Long = 600000 // 10 minutes
+  private val usageCheckInterval: Long = 10 * 60 * 1000 // 10 minutes
 
-  //  private val usageLimit: Long = 10 * 60 * 1000 // 10 minutes
-  private val usageLimit: Long = 15000 // .25 minute
+  private val usageLimit: Long = 10 * 60 * 1000 // 10 minutes
+//  private val usageLimit: Long = 15000 // 15 seconds for testing
 
   private var isBlocked: Boolean = false
 
@@ -128,15 +127,11 @@ class UsageMonitorService : Service() {
         // Schedule the unblocking after 1 hour
         Handler(Looper.getMainLooper()).postDelayed({
           liftBlocking()
-//        }, 60 * 60 * 1000) // 1 hour in milliseconds
-        }, 30000)
+        }, 60 * 60 * 1000) // 1 hour in milliseconds
+//        }, 30000) // 30 seconds for testing
         showOverlay(app)
       }
     }
-
-    // Debugging logs
-    System.out.println("Currently tracked app: $currentForegroundApp")
-    System.out.println("Current app usage duration: $currentAppDuration")
   }
 
   private fun showOverlay(app: String) {
@@ -146,7 +141,7 @@ class UsageMonitorService : Service() {
       val applicationInfo = packageManager.getApplicationInfo(app, 0)
       packageManager.getApplicationLabel(applicationInfo).toString()
     } catch (e: PackageManager.NameNotFoundException) {
-      app // Fallback to package name if the app name cannot be retrieved
+      app
     }
     overlayIntent.putExtra("APP_NAME", appName)
     startService(overlayIntent)

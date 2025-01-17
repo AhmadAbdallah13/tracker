@@ -25,6 +25,8 @@ import android.widget.ImageView
 import android.widget.ListView
 import android.widget.Switch
 import android.widget.TextView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 
 class MainActivity : Activity() {
@@ -33,53 +35,18 @@ class MainActivity : Activity() {
   private lateinit var appsAdapter: AppsAdapter
   private var installedApps: List<AppInfo> = listOf()
 
+  override fun onResume() {
+    super.onResume()
+    checkAllPermissions()
+  }
+
   @SuppressLint("MissingInflatedId")
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    if (!hasUsageAccess(this)) {
-      val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      startActivity(intent)
-      startApp()
-    }
-
-    val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-    if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
-      val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-      startActivity(intent)
-      startApp()
-    }
-
-    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    if (!alarmManager.canScheduleExactAlarms()) {
-      val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-      intent.data = Uri.parse("package:$packageName")
-      startActivity(intent)
-      startApp()
-    } else {
-      val intent = Intent(this, UsageMonitorService::class.java)
-      val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-
-      val triggerAtMillis = System.currentTimeMillis() + 15 * 60 * 1000
-      alarmManager.setExactAndAllowWhileIdle(
-        AlarmManager.RTC_WAKEUP,
-        triggerAtMillis,
-        pendingIntent
-      )
-
-      startService(intent)
-    }
-
-    if (!Settings.canDrawOverlays(this)) {
-      val intent = Intent(
-        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-        Uri.parse("package:$packageName")
-      )
-      startActivityForResult(intent, 1234)
-      startApp()
-    }
+    checkAllPermissions()
+    fireScheduledUsageTracking()
 
     preferencesHelper = PreferencesHelper(this)
 
@@ -109,11 +76,6 @@ class MainActivity : Activity() {
 
   }
 
-  private fun startApp() {
-    val intent = Intent(this, MainActivity::class.java)
-    startActivityForResult(intent, 0)
-  }
-
   private fun getInstalledApps(): List<AppInfo> {
     val packageManager = packageManager
     val packages = packageManager.getInstalledApplications(0)
@@ -136,6 +98,62 @@ class MainActivity : Activity() {
       toggledApps.remove(app.packageName)
     }
     preferencesHelper.saveToggledApps(toggledApps)
+  }
+
+  private fun checkAllPermissions() {
+    fireScheduledUsageTracking()
+    if (!hasUsageAccess(this)) {
+      val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      startActivity(intent)
+    }
+    else {
+      val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+      if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+        val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        startActivity(intent)
+      } else {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        if (!alarmManager.canScheduleExactAlarms()) {
+          val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+          intent.data = Uri.parse("package:$packageName")
+          startActivity(intent)
+        } else {
+          if (!Settings.canDrawOverlays(this)) {
+            val intent = Intent(
+              Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+              Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, 1234)
+          } else {
+            val permissionState =
+              ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            // If the permission is not granted, request it.
+            if (permissionState == PackageManager.PERMISSION_DENIED) {
+              ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private fun fireScheduledUsageTracking(){
+    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    if (alarmManager.canScheduleExactAlarms()) {
+      println("shit called?")
+      val intent = Intent(this, UsageMonitorService::class.java)
+      val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+      val triggerAtMillis = System.currentTimeMillis() + 15 * 60 * 1000
+      alarmManager.setExactAndAllowWhileIdle(
+        AlarmManager.RTC_WAKEUP,
+        triggerAtMillis,
+        pendingIntent
+      )
+
+      startService(intent)
+    }
   }
 }
 
