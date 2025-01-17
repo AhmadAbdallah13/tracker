@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.app.usage.UsageEvents
-import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -24,8 +23,10 @@ class UsageMonitorService : Service() {
   private val trackedAppUsage = mutableMapOf<String, Long>()
   private val usageCheckInterval: Long = 600000 // 10 minutes
 
-  //    private val usageLimit: Long = 10 * 60 * 1000 // 10 minutes
+  //  private val usageLimit: Long = 10 * 60 * 1000 // 10 minutes
   private val usageLimit: Long = 15000 // .25 minute
+
+  private var isBlocked: Boolean = false
 
   override fun onCreate() {
     super.onCreate()
@@ -46,7 +47,7 @@ class UsageMonitorService : Service() {
     manager.createNotificationChannel(channel)
 
     return NotificationCompat.Builder(this, notificationChannelId)
-      .setContentTitle("App Tracker")
+      .setContentTitle("Tracker")
       .setContentText("Tracking app usage in the background.")
       .setSmallIcon(R.drawable.ic_launcher_foreground)
       .build()
@@ -109,27 +110,27 @@ class UsageMonitorService : Service() {
       }
     }
 
-//     If the app is still in the foreground, update the duration
+    // If the app is still in the foreground, update the duration
     if (currentForegroundApp != null) {
       currentAppDuration = currentTime - foregroundStartTime
     }
 
     // Log or take action if the duration exceeds the limit
     currentForegroundApp?.let { app ->
-      if (toggledApps.contains(app) && currentAppDuration > usageLimit) {
-        val packageManager = applicationContext.packageManager
-        val appName = try {
-          val applicationInfo = packageManager.getApplicationInfo(app, 0)
-          packageManager.getApplicationLabel(applicationInfo).toString()
-        } catch (e: PackageManager.NameNotFoundException) {
-          app // Fallback to package name if the app name cannot be retrieved
-        }
-
+      if (toggledApps.contains(app) && isBlocked) {
+        showOverlay(app)
+      } else if (toggledApps.contains(app) && currentAppDuration > usageLimit) {
         Log.d(
           "UsageMonitorService",
-          "App $appName exceeded usage limit: $currentAppDuration ms more than usageLimit"
+          "App $app exceeded usage limit: $currentAppDuration ms more than usageLimit"
         )
-        showOverlay(appName) // Pass the app name to your overlay logic if needed
+        isBlocked = true
+        // Schedule the unblocking after 1 hour
+        Handler(Looper.getMainLooper()).postDelayed({
+          liftBlocking()
+//        }, 60 * 60 * 1000) // 1 hour in milliseconds
+        }, 30000)
+        showOverlay(app)
       }
     }
 
@@ -140,7 +141,46 @@ class UsageMonitorService : Service() {
 
   private fun showOverlay(app: String) {
     val overlayIntent = Intent(this, OverlayService::class.java)
-    overlayIntent.putExtra("APP_NAME", app)
+    val packageManager = applicationContext.packageManager
+    val appName = try {
+      val applicationInfo = packageManager.getApplicationInfo(app, 0)
+      packageManager.getApplicationLabel(applicationInfo).toString()
+    } catch (e: PackageManager.NameNotFoundException) {
+      app // Fallback to package name if the app name cannot be retrieved
+    }
+    overlayIntent.putExtra("APP_NAME", appName)
     startService(overlayIntent)
+  }
+
+  private fun liftBlocking() {
+    showUnblockingNotification()
+    isBlocked = false
+  }
+
+  private fun showUnblockingNotification() {
+    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val channelId = "unblocking_channel"
+
+    // Create a notification channel (for Android 8.0 and above)
+    val channel = NotificationChannel(
+      channelId,
+      "Blocking Notifications",
+      NotificationManager.IMPORTANCE_HIGH
+    ).apply {
+      description = "Notifications for app blocking status"
+    }
+    notificationManager.createNotificationChannel(channel)
+
+    // Build the notification
+    val notification = NotificationCompat.Builder(this, channelId)
+      .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with your app's icon
+      .setContentTitle("Tracker")
+      .setContentText("You can now use the blocked apps again, enjoy amigo.")
+      .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .setAutoCancel(true)
+      .build()
+
+    // Show the notification
+    notificationManager.notify(1, notification)
   }
 }
