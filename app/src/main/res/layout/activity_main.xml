@@ -1,12 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:orientation="vertical"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <LinearLayout
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:background="#660219"
+    android:padding="16dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
 
-    <ListView
-        android:id="@+id/appsListView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    <TextView
+      android:id="@+id/titleBar"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:text="Installed Apps"
+      android:textColor="#FFFFFF"
+      android:textSize="20sp"
+      android:textStyle="bold"
+      tools:ignore="HardcodedText" />
 
+    <ImageView
+      android:id="@+id/infoIcon"
+      android:layout_width="24dp"
+      android:layout_height="24dp"
+      android:src="@android:drawable/ic_menu_info_details"
+      android:contentDescription="Info icon"
+      android:layout_marginStart="8dp"
+      app:tint="#FFFFFF"
+      tools:ignore="HardcodedText" />
+  </LinearLayout>
+
+  <ListView
+    android:id="@+id/appsListView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:divider="@android:color/darker_gray"
+    android:dividerHeight="1dp" />
 </LinearLayout>

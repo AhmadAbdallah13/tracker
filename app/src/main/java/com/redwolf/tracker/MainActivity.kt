@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlarmManager
+import android.app.AlertDialog
 import android.app.AppOpsManager
 import android.app.PendingIntent
 import android.content.Context
@@ -41,12 +42,14 @@ class MainActivity : Activity() {
       val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       startActivity(intent)
+      startApp()
     }
 
     val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
     if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
       val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
       startActivity(intent)
+      startApp()
     }
 
     val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -54,6 +57,19 @@ class MainActivity : Activity() {
       val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
       intent.data = Uri.parse("package:$packageName")
       startActivity(intent)
+      startApp()
+    } else {
+      val intent = Intent(this, UsageMonitorService::class.java)
+      val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+      val triggerAtMillis = System.currentTimeMillis() + 15 * 60 * 1000
+      alarmManager.setExactAndAllowWhileIdle(
+        AlarmManager.RTC_WAKEUP,
+        triggerAtMillis,
+        pendingIntent
+      )
+
+      startService(intent)
     }
 
     if (!Settings.canDrawOverlays(this)) {
@@ -62,15 +78,8 @@ class MainActivity : Activity() {
         Uri.parse("package:$packageName")
       )
       startActivityForResult(intent, 1234)
+      startApp()
     }
-
-    val intent = Intent(this, UsageMonitorService::class.java)
-    val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-
-    val triggerAtMillis = System.currentTimeMillis() + 15 * 60 * 1000
-    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
-
-    startService(intent)
 
     preferencesHelper = PreferencesHelper(this)
 
@@ -86,6 +95,23 @@ class MainActivity : Activity() {
     }
 
     appsListView.adapter = appsAdapter
+    val infoIcon: ImageView = findViewById(R.id.infoIcon)
+    infoIcon.setOnClickListener {
+      // Create an AlertDialog
+      val builder = AlertDialog.Builder(this)
+      builder.setTitle("About This App")
+      builder.setMessage("Use any of the toggled apps for 10 minutes straight and all of them will be blocked for 1 hour!")
+      builder.setPositiveButton("OK") { dialog, _ ->
+        dialog.dismiss() // Close the dialog
+      }
+      builder.create().show()
+    }
+
+  }
+
+  private fun startApp() {
+    val intent = Intent(this, MainActivity::class.java)
+    startActivityForResult(intent, 0)
   }
 
   private fun getInstalledApps(): List<AppInfo> {
@@ -155,7 +181,11 @@ class AppsAdapter(
 fun hasUsageAccess(context: Context): Boolean {
   val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
   val mode =
-    appOps.unsafeCheckOpRaw(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+    appOps.unsafeCheckOpRaw(
+      AppOpsManager.OPSTR_GET_USAGE_STATS,
+      Process.myUid(),
+      context.packageName
+    )
   val granted = if (mode == AppOpsManager.MODE_DEFAULT)
     (context.checkCallingOrSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED)
   else
