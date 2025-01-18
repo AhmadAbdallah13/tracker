@@ -185,11 +185,16 @@ class AppsAdapter(
     val app = apps[position]
     appIcon.setImageDrawable(app.icon)
     appName.text = app.name
+
+    toggleSwitch.setOnCheckedChangeListener(null)
+
     toggleSwitch.isChecked = app.isToggled
 
     toggleSwitch.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->
-      app.isToggled = isChecked
-      onToggleChanged(app, isChecked)
+      if (app.isToggled != isChecked) {
+        app.isToggled = isChecked
+        onToggleChanged(app, isChecked)
+      }
     }
 
     return view
