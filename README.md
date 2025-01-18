@@ -1,18 +1,7 @@
-# To debug while running on an emulator:
-chrome://inspect/#devices
+# Tracker
+Simply put this app will show the installed apps and an option to toggle each one, when using a toggled app this app 
+will track the usage period and if it exceeds 10 minutes (in one consecutive session) all toggled apps will be blocked for one hour.
 
-# Update the android configuration:
-ionic build && npx cap sync android
-or
-cd android && ./gradlew clean && ./gradlew build && cd .. && npx cap sync android
-
-# Live reload on the emultor
-ionic build && ionic capacitor run android -l --external
-
-# run:
-npx cap run android
-
-# Resources
-https://github.com/ionic-team/ionic-storage
-https://danielsogl.gitbook.io/awesome-cordova-plugins/android-permissions
-https://developer.android.com/reference/android/Manifest.permission#SYSTEM_ALERT_WINDOW
+In order to work correctly this app requires multiple permissions, when opening the app for the first time it will redirect the user
+directly to the appropriate settings permission page multiple times (to grant all permissions) because I am too lazy to implement
+a pop up to ask for the permissions
