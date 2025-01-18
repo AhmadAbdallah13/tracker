@@ -20,7 +20,7 @@ class UsageMonitorService : Service() {
 
   private lateinit var handler: Handler
   private lateinit var preferencesHelper: PreferencesHelper
-  private val usageCheckInterval: Long = 10 * 60 * 1000 // 10 minutes
+  private val usageCheckInterval: Long = 15 * 60 * 1000 // 10 minutes
 
   private val usageLimit: Long = 10 * 60 * 1000 // 10 minutes
 //  private val usageLimit: Long = 15000 // 15 seconds for testing
@@ -91,7 +91,6 @@ class UsageMonitorService : Service() {
 
       when (event.eventType) {
         UsageEvents.Event.ACTIVITY_RESUMED -> {
-          // If a new app is opened, reset tracking
           if (currentForegroundApp != event.packageName) {
             currentForegroundApp = event.packageName
             foregroundStartTime = event.timeStamp
@@ -99,11 +98,9 @@ class UsageMonitorService : Service() {
         }
 
         UsageEvents.Event.ACTIVITY_PAUSED -> {
-          // If the currently tracked app goes to the background, calculate its usage
           if (currentForegroundApp == event.packageName) {
-            currentAppDuration = event.timeStamp - foregroundStartTime
+            currentAppDuration += event.timeStamp - foregroundStartTime
             currentForegroundApp = null
-            foregroundStartTime = 0
           }
         }
       }
@@ -111,10 +108,9 @@ class UsageMonitorService : Service() {
 
     // If the app is still in the foreground, update the duration
     if (currentForegroundApp != null) {
-      currentAppDuration = currentTime - foregroundStartTime
+      currentAppDuration += currentTime - foregroundStartTime
     }
 
-    // Log or take action if the duration exceeds the limit
     currentForegroundApp?.let { app ->
       if (toggledApps.contains(app) && isBlocked) {
         showOverlay(app)
@@ -132,6 +128,10 @@ class UsageMonitorService : Service() {
         showOverlay(app)
       }
     }
+
+    // Debugging logs
+//    println("Currently tracked app: $currentForegroundApp")
+//    println("Current app usage duration: $currentAppDuration")
   }
 
   private fun showOverlay(app: String) {
