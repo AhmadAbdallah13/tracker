@@ -23,6 +23,7 @@ import android.widget.BaseAdapter
 import android.widget.CompoundButton
 import android.widget.ImageView
 import android.widget.ListView
+import android.widget.SearchView
 import android.widget.Switch
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
@@ -73,6 +74,19 @@ class MainActivity : Activity() {
       }
       builder.create().show()
     }
+
+    val appSearchView: SearchView = findViewById(R.id.appSearchView)
+    // Handle search queries
+    appSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+      override fun onQueryTextSubmit(query: String?): Boolean {
+        return false // We don't need to handle query submission
+      }
+
+      override fun onQueryTextChange(newText: String?): Boolean {
+        appsAdapter.filter(newText) // Filter the list based on user input
+        return true
+      }
+    })
 
   }
 
@@ -166,12 +180,14 @@ data class AppInfo(
 
 class AppsAdapter(
   private val context: Context,
-  private val apps: List<AppInfo>,
+  private val originalApps: List<AppInfo>,
   private val onToggleChanged: (AppInfo, Boolean) -> Unit
 ) : BaseAdapter() {
 
-  override fun getCount(): Int = apps.size
-  override fun getItem(position: Int): Any = apps[position]
+  private val filteredApps: MutableList<AppInfo> = originalApps.toMutableList()
+
+  override fun getCount(): Int = filteredApps.size
+  override fun getItem(position: Int): Any = filteredApps[position]
   override fun getItemId(position: Int): Long = position.toLong()
 
   @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -182,7 +198,7 @@ class AppsAdapter(
     val appName: TextView = view.findViewById(R.id.appName)
     val toggleSwitch: Switch = view.findViewById(R.id.appToggleSwitch)
 
-    val app = apps[position]
+    val app = filteredApps[position]
     appIcon.setImageDrawable(app.icon)
     appName.text = app.name
 
@@ -199,7 +215,20 @@ class AppsAdapter(
 
     return view
   }
+
+  // Function to filter apps based on a query
+  fun filter(query: String?) {
+    filteredApps.clear()
+    if (query.isNullOrBlank()) {
+      filteredApps.addAll(originalApps) // Show all apps if query is empty
+    } else {
+      val lowerCaseQuery = query.lowercase()
+      filteredApps.addAll(originalApps.filter { it.name.lowercase().contains(lowerCaseQuery) })
+    }
+    notifyDataSetChanged()
+  }
 }
+
 
 fun hasUsageAccess(context: Context): Boolean {
   val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager

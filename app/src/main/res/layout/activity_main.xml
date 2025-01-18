@@ -36,6 +36,18 @@
       tools:ignore="HardcodedText" />
   </LinearLayout>
 
+  <!-- Search Bar -->
+  <SearchView
+    android:id="@+id/appSearchView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:queryHint="Search apps"
+    android:iconifiedByDefault="false"
+    android:background="#f5f5f5"
+    android:padding="8dp"
+    android:elevation="4dp"
+    android:layout_marginBottom="8dp" />
+
   <ListView
     android:id="@+id/appsListView"
     android:layout_width="match_parent"
