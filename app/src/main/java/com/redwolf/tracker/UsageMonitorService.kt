@@ -20,7 +20,7 @@ class UsageMonitorService : Service() {
 
   private lateinit var handler: Handler
   private lateinit var preferencesHelper: PreferencesHelper
-  private val usageCheckInterval: Long = 15 * 60 * 1000 // 10 minutes
+  private val usageCheckInterval: Long = 15 * 60 * 1000 // 15 minutes
 
   private val usageLimit: Long = 10 * 60 * 1000 // 10 minutes
 //  private val usageLimit: Long = 15000 // 15 seconds for testing
@@ -99,8 +99,9 @@ class UsageMonitorService : Service() {
 
         UsageEvents.Event.ACTIVITY_PAUSED -> {
           if (currentForegroundApp == event.packageName) {
-            currentAppDuration += event.timeStamp - foregroundStartTime
+            currentAppDuration = event.timeStamp - foregroundStartTime
             currentForegroundApp = null
+            foregroundStartTime = 0
           }
         }
       }
@@ -108,7 +109,7 @@ class UsageMonitorService : Service() {
 
     // If the app is still in the foreground, update the duration
     if (currentForegroundApp != null) {
-      currentAppDuration += currentTime - foregroundStartTime
+      currentAppDuration = currentTime - foregroundStartTime
     }
 
     currentForegroundApp?.let { app ->
