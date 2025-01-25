@@ -14,7 +14,13 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import java.util.concurrent.TimeUnit
 
+private var isBlocked: Boolean = false
 
 class UsageMonitorService : Service() {
 
@@ -24,8 +30,6 @@ class UsageMonitorService : Service() {
 
   private val usageLimit: Long = 10 * 60 * 1000 // 10 minutes
 //  private val usageLimit: Long = 15000 // 15 seconds for testing
-
-  private var isBlocked: Boolean = false
 
   override fun onCreate() {
     super.onCreate()
@@ -122,10 +126,11 @@ class UsageMonitorService : Service() {
         )
         isBlocked = true
         // Schedule the unblocking after 1 hour
-        Handler(Looper.getMainLooper()).postDelayed({
-          liftBlocking()
-        }, 60 * 60 * 1000) // 1 hour in milliseconds
-//        }, 30000) // 30 seconds for testing
+        val workRequest = OneTimeWorkRequestBuilder<UnblockWorker>()
+          .setInitialDelay(1, TimeUnit.HOURS) // 1 hour delay
+//          .setInitialDelay(30, TimeUnit.SECONDS) // 30 seconds for testing
+          .build()
+        WorkManager.getInstance(applicationContext).enqueue(workRequest)
         showOverlay(app)
       }
     }
@@ -147,17 +152,24 @@ class UsageMonitorService : Service() {
     overlayIntent.putExtra("APP_NAME", appName)
     startService(overlayIntent)
   }
+}
 
-  private fun liftBlocking() {
-    showUnblockingNotification()
-    isBlocked = false
+class UnblockWorker(appContext: Context, workerParams: WorkerParameters) :
+  Worker(appContext, workerParams) {
+  override fun doWork(): Result {
+    // Perform unblocking logic
+    liftBlocking()
+    return Result.success()
   }
 
-  private fun showUnblockingNotification() {
-    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+  private fun liftBlocking() {
+    isBlocked = false
+
+    // Show unblocking notification or perform other actions
+    val notificationManager =
+      applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val channelId = "unblocking_channel"
 
-    // Create a notification channel (for Android 8.0 and above)
     val channel = NotificationChannel(
       channelId,
       "Blocking Notifications",
@@ -167,8 +179,7 @@ class UsageMonitorService : Service() {
     }
     notificationManager.createNotificationChannel(channel)
 
-    // Build the notification
-    val notification = NotificationCompat.Builder(this, channelId)
+    val notification = NotificationCompat.Builder(applicationContext, channelId)
       .setSmallIcon(R.mipmap.ic_launcher)
       .setContentTitle("Tracker")
       .setContentText("You can now use the blocked apps again, enjoy amigo.")
@@ -176,7 +187,6 @@ class UsageMonitorService : Service() {
       .setAutoCancel(true)
       .build()
 
-    // Show the notification
     notificationManager.notify(1, notification)
   }
 }

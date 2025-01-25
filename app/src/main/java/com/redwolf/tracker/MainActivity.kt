@@ -120,8 +120,7 @@ class MainActivity : Activity() {
       val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       startActivity(intent)
-    }
-    else {
+    } else {
       val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
       if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
         val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
@@ -144,7 +143,11 @@ class MainActivity : Activity() {
               ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             // If the permission is not granted, request it.
             if (permissionState == PackageManager.PERMISSION_DENIED) {
-              ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+              ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                1
+              )
             }
           }
         }
@@ -152,10 +155,9 @@ class MainActivity : Activity() {
     }
   }
 
-  private fun fireScheduledUsageTracking(){
+  private fun fireScheduledUsageTracking() {
     val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
     if (alarmManager.canScheduleExactAlarms()) {
-      println("shit called?")
       val intent = Intent(this, UsageMonitorService::class.java)
       val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
